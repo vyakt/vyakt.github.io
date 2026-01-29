@@ -3,8 +3,9 @@ id: attention-is-all-you-need
 title: "Attention Is All You Need: Understanding the Transformer Architecture"
 description: A visual exploration of the revolutionary Transformer architecture that changed deep learning forever
 authors:
-  - name: Vyakta Team
-    affiliation: Vyakta Research
+  - name: Arun Kumar
+    github: oldmonkABA
+    affiliation: Pratyaksha
 date: 2024-01-15
 tags:
   - deep-learning
