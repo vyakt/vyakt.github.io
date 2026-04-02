@@ -823,37 +823,83 @@ print(f"BPSK Signal - Max: {np.max(s_bpsk):.3f}, Min: {np.min(s_bpsk):.3f}")`,ex
 
 The choice of modulation technique depends on the specific application requirements: AM for simple, low-cost systems; FM for noise-critical applications; BPSK for highly reliable communications; and QAM for high-speed data transmission. Understanding these techniques is essential for designing and analyzing modern communication systems.`}]},"logistic-regression-article":{id:"logistic-regression-article",title:"Logistic Regression: From Probability to Prediction",description:"An intuitive, visual exploration of Logistic Regression—from the sigmoid function to maximum likelihood estimation.",difficulty:"beginner",estimatedReadTime:30,sections:[{id:"overview",title:"Overview",content:`### Why Not Just Use Linear Regression?
 
-Before diving into <term def="A classification algorithm that outputs probabilities by applying the sigmoid function to a linear combination of features">logistic regression</term>, let's understand why we can't simply use <term def="A regression technique that models the relationship between variables as a straight line">linear regression</term> for classification. Consider predicting whether an email is spam (1) or not spam (0):
+Your first instinct for a binary prediction problem — "will this patient develop diabetes?" — might be to reach for <term def="A regression technique that models the relationship between variables as a straight line">linear regression</term>. After all, you already know how to fit a line to data. Label each patient 0 (healthy) or 1 (diabetic), plot their blood-sugar level on the x-axis, and fit a best-fit line. Then read off the predicted value for a new patient and treat it as a probability.
 
-[note: Linear regression outputs can be any real number, but probabilities must be between 0 and 1. We need a function that maps any input to this range.]
+Sounds reasonable. Let's see what happens.
 
-\`\`\`d3
-{
-  "width": 700,
-  "height": 400,
-  "code": "const width=700,height=400;const margin={top:50,right:50,bottom:60,left:60};const innerWidth=width-margin.left-margin.right;const innerHeight=height-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const svg=d3.select(container).append('svg').attr('width',width).attr('height',height);svg.append('rect').attr('width',width).attr('height',height).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xScale=d3.scaleLinear().domain([0,10]).range([0,innerWidth]);const yScale=d3.scaleLinear().domain([-0.5,1.5]).range([innerHeight,0]);g.append('g').attr('opacity',0.15).call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${innerHeight})\`).attr('opacity',0.15).call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(''));g.append('g').call(d3.axisLeft(yScale).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${innerHeight})\`).call(d3.axisBottom(xScale).ticks(5)).selectAll('text').attr('fill','#57534e');const points=[{x:1,y:0},{x:1.5,y:0},{x:2,y:0},{x:2.5,y:0},{x:3,y:0},{x:3.5,y:0},{x:6,y:1},{x:6.5,y:1},{x:7,y:1},{x:7.5,y:1},{x:8,y:1},{x:9,y:1}];g.selectAll('.point').data(points).enter().append('circle').attr('cx',d=>xScale(d.x)).attr('cy',d=>yScale(d.y)).attr('r',6).attr('fill',d=>d.y===0?'#3b82f6':'#ef4444').attr('opacity',0.8);g.append('line').attr('x1',xScale(0)).attr('y1',yScale(-0.15)).attr('x2',xScale(10)).attr('y2',yScale(1.15)).attr('stroke','#f97316').attr('stroke-width',2).attr('stroke-dasharray','5,5');g.append('rect').attr('x',xScale(0)).attr('y',yScale(1)).attr('width',innerWidth).attr('height',yScale(0)-yScale(1)).attr('fill','#22c55e').attr('opacity',0.1);g.append('line').attr('x1',xScale(0)).attr('y1',yScale(0)).attr('x2',xScale(10)).attr('y2',yScale(0)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');g.append('line').attr('x1',xScale(0)).attr('y1',yScale(1)).attr('x2',xScale(10)).attr('y2',yScale(1)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');g.append('text').attr('x',innerWidth+5).attr('y',yScale(1)+4).attr('font-size','11px').attr('fill','#57534e').text('y=1');g.append('text').attr('x',innerWidth+5).attr('y',yScale(0)+4).attr('font-size','11px').attr('fill','#57534e').text('y=0');g.append('text').attr('x',xScale(8.5)).attr('y',yScale(1.35)).attr('font-size','11px').attr('fill','#f97316').text('Linear: predicts >1!');g.append('text').attr('x',xScale(0.5)).attr('y',yScale(-0.35)).attr('font-size','11px').attr('fill','#f97316').text('Linear: predicts <0!');svg.append('text').attr('x',width/2).attr('y',25).attr('text-anchor','middle').attr('font-size','16px').attr('font-weight','600').text('The Problem with Linear Regression for Classification');svg.append('text').attr('x',width/2).attr('y',height-10).attr('text-anchor','middle').attr('font-size','12px').attr('fill','#57534e').text('Feature Value');"
-}
-\`\`\`
-
-Linear regression can predict values outside [0, 1], which doesn't make sense as a probability. We need a function that **squashes** any real number into the probability range.
-
-### The Sigmoid Function
-
-Enter the **sigmoid function** (also called the logistic function):
-
-$$\\sigma(z) = \\frac{1}{1 + e^{-z}}$$
-
-This S-shaped curve elegantly maps any real number to a value between 0 and 1:
+The chart below shows twelve patients: blue dots are healthy (y = 0) and red dots are diabetic (y = 1). The dashed orange line is the ordinary least-squares fit. Click **Add Outlier** to drop a diabetic patient at x = 20 and watch the line re-fit.
 
 \`\`\`d3
 {
   "width": 700,
-  "height": 400,
-  "code": "const W=700,H=320,margin={top:10,right:40,bottom:50,left:55};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const eqDiv=wrap.append('div').style('text-align','center').style('padding','8px 0 4px').style('font-size','18px');function renderEq(a,b){const K=window.katex;const bs=b>=0?'+'+b.toFixed(1):b.toFixed(1);const tex=\`\\\\\\\\sigma(x)=\\\\\\\\dfrac{1}{1+e^{-(\${a.toFixed(1)}\\\\\\\\,x\\\\\\\\,\${bs})}}\`;if(K){eqDiv.html('');K.render(tex,eqDiv.node(),{displayMode:false,throwOnError:false});}else{eqDiv.text(\`σ(x) = 1/(1+e^-(\${a.toFixed(1)}x + \${b.toFixed(1)}))\`);}}const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xS=d3.scaleLinear().domain([-6,6]).range([0,iW]),yS=d3.scaleLinear().domain([0,1]).range([iH,0]);g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(6)).selectAll('text').attr('fill','#57534e');const ref=[];for(let z=-6;z<=6;z+=0.1)ref.push({z,y:1/(1+Math.exp(-z))});const ln=d3.line().x(d=>xS(d.z)).y(d=>yS(d.y)).curve(d3.curveBasis);g.append('path').datum(ref).attr('d',ln).attr('fill','none').attr('stroke','#a3a3a3').attr('stroke-width',1.5).attr('stroke-dasharray','6,4').attr('opacity',0.5);g.append('text').attr('x',iW-2).attr('y',yS(0.95)).attr('text-anchor','end').attr('font-size','10px').attr('fill','#a3a3a3').text('a=1, b=0');g.append('line').attr('x1',0).attr('y1',yS(0.5)).attr('x2',iW).attr('y2',yS(0.5)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','5,5');const curve=g.append('path').attr('fill','none').attr('stroke','#0d6e6e').attr('stroke-width',3);const dot=g.append('circle').attr('r',5).attr('fill','#0d6e6e');const lbl=g.append('text').attr('font-size','11px').attr('fill','#0d6e6e').attr('font-weight','600');function upd(a,b){const d=[];for(let z=-6;z<=6;z+=0.1)d.push({z,y:1/(1+Math.exp(-(a*z+b)))});curve.datum(d).attr('d',ln);const mx=a!==0?-b/a:0;if(a!==0&&mx>=-6&&mx<=6){dot.attr('cx',xS(mx)).attr('cy',yS(0.5)).attr('opacity',1);lbl.attr('x',xS(mx)+8).attr('y',yS(0.56)).text(\`(\${mx.toFixed(1)}, 0.5)\`).attr('opacity',1);}else{dot.attr('opacity',0);lbl.attr('opacity',0);}renderEq(a,b);}const ctrls=wrap.append('div').style('display','flex').style('gap','24px').style('padding','8px 16px').style('font-size','13px').style('font-family','system-ui, sans-serif').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');function mkS(p,lab,mn,mx,st,ini,cb){const r=p.append('div').style('display','flex').style('align-items','center').style('gap','8px').style('flex','1');r.append('span').style('font-weight','600').style('min-width','90px').text(lab);const inp=r.append('input').attr('type','range').attr('min',mn).attr('max',mx).attr('step',st).attr('value',ini).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const v=r.append('span').style('min-width','32px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text(ini.toFixed(1));inp.on('input',function(){const n=+this.value;v.text(n.toFixed(1));cb(n);});}let A=1,B=0;mkS(ctrls,'a (steepness)',-3,3,0.1,1,v=>{A=v;upd(A,B);});mkS(ctrls,'b (shift)',-5,5,0.1,0,v=>{B=v;upd(A,B);});upd(1,0);"
+  "height": 360,
+  "code": "const W=700,H=360,margin={top:10,right:40,bottom:50,left:55};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const titleDiv=wrap.append('div').style('text-align','center').style('padding','8px 0 4px').style('font-size','15px').style('font-weight','600').text('The Problem with Linear Regression for Classification');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);let points=[{x:1,y:0},{x:1.5,y:0},{x:2,y:0},{x:2.5,y:0},{x:3,y:0},{x:3.5,y:0},{x:6,y:1},{x:6.5,y:1},{x:7,y:1},{x:7.5,y:1},{x:8,y:1},{x:9,y:1}];let hasOutlier=false;const xS=d3.scaleLinear().range([0,iW]);const yS=d3.scaleLinear().domain([-0.5,1.5]).range([iH,0]);function fitLine(pts){const n=pts.length;const sx=d3.sum(pts,d=>d.x),sy=d3.sum(pts,d=>d.y);const sxx=d3.sum(pts,d=>d.x*d.x),sxy=d3.sum(pts,d=>d.x*d.y);const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx);const intercept=(sy-slope*sx)/n;return{slope,intercept};}function draw(){const xMax=hasOutlier?22:10;xS.domain([0,xMax]);g.selectAll('*').remove();g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('rect').attr('x',0).attr('y',yS(1)).attr('width',iW).attr('height',yS(0)-yS(1)).attr('fill','#22c55e').attr('opacity',0.06);g.append('line').attr('x1',0).attr('y1',yS(0)).attr('x2',iW).attr('y2',yS(0)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');g.append('line').attr('x1',0).attr('y1',yS(1)).attr('x2',iW).attr('y2',yS(1)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');g.append('text').attr('x',iW+4).attr('y',yS(1)+4).attr('font-size','10px').attr('fill','#57534e').text('y=1');g.append('text').attr('x',iW+4).attr('y',yS(0)+4).attr('font-size','10px').attr('fill','#57534e').text('y=0');const fit=fitLine(points);const x0=0,x1=xMax;const y0=fit.intercept,y1=fit.slope*x1+fit.intercept;g.append('line').attr('x1',xS(x0)).attr('y1',yS(y0)).attr('x2',xS(x1)).attr('y2',yS(y1)).attr('stroke','#f97316').attr('stroke-width',2.5).attr('stroke-dasharray','6,4');if(y1>1)g.append('text').attr('x',xS(x1)-60).attr('y',yS(Math.min(y1,1.4))-8).attr('font-size','11px').attr('fill','#f97316').attr('font-weight','600').text('Predicts > 1!');if(y0<0)g.append('text').attr('x',xS(x0)+4).attr('y',yS(Math.max(y0,-0.4))+16).attr('font-size','11px').attr('fill','#f97316').attr('font-weight','600').text('Predicts < 0!');g.selectAll('.pt').data(points).enter().append('circle').attr('cx',d=>xS(d.x)).attr('cy',d=>yS(d.y)).attr('r',6).attr('fill',d=>d.y===0?'#3b82f6':'#ef4444').attr('opacity',0.85).attr('stroke','#fff').attr('stroke-width',1.5);}draw();const btnRow=wrap.append('div').style('display','flex').style('gap','12px').style('padding','8px 16px').style('justify-content','center');btnRow.append('button').text('Add Outlier at x=20').style('padding','6px 16px').style('font-size','13px').style('border','1px solid #d4d4d4').style('border-radius','6px').style('background','#fff').style('cursor','pointer').style('font-family','system-ui').on('click',function(){if(!hasOutlier){points.push({x:20,y:1});hasOutlier=true;draw();d3.select(this).attr('disabled',true).style('opacity','0.5').style('cursor','default');}});btnRow.append('button').text('Reset').style('padding','6px 16px').style('font-size','13px').style('border','1px solid #d4d4d4').style('border-radius','6px').style('background','#fff').style('cursor','pointer').style('font-family','system-ui').on('click',function(){points=[{x:1,y:0},{x:1.5,y:0},{x:2,y:0},{x:2.5,y:0},{x:3,y:0},{x:3.5,y:0},{x:6,y:1},{x:6.5,y:1},{x:7,y:1},{x:7.5,y:1},{x:8,y:1},{x:9,y:1}];hasOutlier=false;draw();btnRow.select('button').attr('disabled',null).style('opacity','1').style('cursor','pointer');});"
 }
 \`\`\`
+
+Two problems jump out:
+
+1. **Impossible probabilities.** The line happily predicts values below 0 and above 1. A probability of $-0.15$ or $1.3$ is meaningless — yet that is exactly what linear regression gives us at the extremes.
+
+2. **Outlier sensitivity.** A single unusual-but-legitimate data point drags the entire line, shifting the decision boundary for *every* patient. The model has no mechanism to "saturate" near 0 or 1; it just keeps stretching the line.
+
+[note: What we really need is a function that (a) maps any real number to the interval $[0, 1]$ and (b) flattens out at both ends so outliers cannot dominate the fit. That function turns out to be the **sigmoid**, and the reasoning that leads us there starts with a concept from gambling.]
+
+### From Odds to the Sigmoid
+
+Instead of jumping straight to the sigmoid formula, let's arrive at it the way statisticians did — through the language of **odds**.
+
+If you have ever heard a commentator say "the odds are 3 to 1 in favour," you already have the core idea. When the probability of an event is $p$, the <term def="The ratio p/(1-p), expressing how much more likely an event is to happen than not">odds</term> are defined as:
+
+$$\\text{odds} = \\frac{p}{1 - p}$$
+
+A probability of $0.75$ corresponds to odds of $3$ ("three times as likely to happen as not"). A probability of $0.5$ gives odds of $1$ (an even bet). Notice that odds range from $0$ (when $p = 0$) to $+\\infty$ (as $p \\to 1$) — they are always non-negative, but they are *not* symmetric around the even-bet point.
+
+To fix that asymmetry, take the natural logarithm:
+
+$$\\text{log-odds} = \\log\\!\\left(\\frac{p}{1 - p}\\right)$$
+
+This quantity — called the <term def="The natural logarithm of the odds, log(p/(1-p)). Also called the logit. It maps probabilities from (0,1) to the entire real line (-inf, +inf).">logit</term> — ranges from $-\\infty$ to $+\\infty$ and is symmetric: a probability of $0.25$ gives the same magnitude log-odds as $0.75$, but with opposite sign. In other words, the logit maps the cramped $[0, 1]$ probability scale onto the entire real line — exactly the kind of domain a linear model can work with.
+
+Drag the slider below and watch all three quantities update:
+
+\`\`\`d3
+{
+  "width": 700,
+  "height": 280,
+  "code": "const W=700,H=200,margin={top:20,right:50,bottom:30,left:50};d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const iW=W-margin.left-margin.right;const rowH=45;const rows=[{label:'Probability',color:'#3b82f6',domain:[0,1],y:0},{label:'Odds',color:'#8b5cf6',domain:[0,10],y:rowH},{label:'Log-odds',color:'#0d6e6e',domain:[-5,5],y:rowH*2}];const scales=rows.map(r=>d3.scaleLinear().domain(r.domain).range([0,iW]).clamp(true));rows.forEach((r,i)=>{const ry=r.y;g.append('text').attr('x',-5).attr('y',ry+18).attr('text-anchor','end').attr('font-size','11px').attr('fill',r.color).attr('font-weight','600').text(r.label);g.append('line').attr('x1',0).attr('y1',ry+22).attr('x2',iW).attr('y2',ry+22).attr('stroke','#e5e5e5').attr('stroke-width',2);g.append('text').attr('x',0).attr('y',ry+38).attr('font-size','9px').attr('fill','#a3a3a3').text(r.domain[0]);g.append('text').attr('x',iW).attr('y',ry+38).attr('text-anchor','end').attr('font-size','9px').attr('fill','#a3a3a3').text(r.domain[1]===10?'∞':r.domain[1]);});const dots=rows.map((r,i)=>g.append('circle').attr('cy',r.y+22).attr('r',8).attr('fill',r.color).attr('stroke','#fff').attr('stroke-width',2));const vals=rows.map((r,i)=>g.append('text').attr('y',r.y+8).attr('font-size','14px').attr('fill',r.color).attr('font-weight','700'));function upd(p){p=Math.max(0.01,Math.min(0.99,p));const odds=p/(1-p);const logodds=Math.log(odds);dots[0].attr('cx',scales[0](p));dots[1].attr('cx',scales[1](Math.min(odds,10)));dots[2].attr('cx',scales[2](Math.max(-5,Math.min(5,logodds))));vals[0].attr('x',scales[0](p)).attr('text-anchor','middle').text(p.toFixed(2));vals[1].attr('x',scales[1](Math.min(odds,10))).attr('text-anchor','middle').text(odds>100?'∞':odds.toFixed(2));vals[2].attr('x',scales[2](Math.max(-5,Math.min(5,logodds)))).attr('text-anchor','middle').text(logodds.toFixed(2));}const ctrls=wrap.append('div').style('display','flex').style('align-items','center').style('gap','12px').style('padding','8px 50px').style('font-size','13px').style('font-family','system-ui').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');ctrls.append('span').style('font-weight','600').style('min-width','90px').text('Probability');const inp=ctrls.append('input').attr('type','range').attr('min',0.01).attr('max',0.99).attr('step',0.01).attr('value',0.5).style('flex','1').style('accent-color','#3b82f6').style('cursor','pointer');inp.on('input',function(){upd(+this.value);});upd(0.5);"
+}
+\`\`\`
+
+Notice: as probability approaches 0 or 1, the odds go to 0 or ∞. But log-odds? It covers the full range from −∞ to +∞. This is exactly what linear regression outputs.
+
+Here's the key insight: **model the log-odds as a linear function of the input features**:
+
+$$\\log\\left(\\frac{P(y=1|x)}{1-P(y=1|x)}\\right) = w^T x + b$$
+
+Now solve for P. The algebra gives us:
+
+$$P(y=1|x) = \\frac{1}{1 + e^{-(w^T x + b)}}$$
+
+This is the **sigmoid function**. We didn't invent it out of thin air — it *emerged* from deciding to model log-odds linearly.
+
+### The Sigmoid Emerges
+
+Click **Transform** below to watch a linear function morph into the sigmoid. This is what happens when you solve log-odds = z back for probability:
+
+\`\`\`d3
+{ "width": 700, "height": 380, "code": "const W=700,H=310,margin={top:10,right:40,bottom:50,left:55};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xS=d3.scaleLinear().domain([-6,6]).range([0,iW]);const yS=d3.scaleLinear().domain([-0.2,1.2]).range([iH,0]);g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(6)).selectAll('text').attr('fill','#57534e');g.append('line').attr('x1',0).attr('y1',yS(0)).attr('x2',iW).attr('y2',yS(0)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');g.append('line').attr('x1',0).attr('y1',yS(1)).attr('x2',iW).attr('y2',yS(1)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');const N=121;const lineData=[];for(let i=0;i<N;i++){const x=-6+12*i/(N-1);lineData.push({x,yLin:(x+6)/12,ySig:1/(1+Math.exp(-x))});}const path=g.append('path').attr('fill','none').attr('stroke','#0d6e6e').attr('stroke-width',3);const ln=d3.line().x(d=>xS(d.x)).curve(d3.curveBasis);let isLinear=true;function drawState(t){path.attr('d',ln.y(d=>{const v=d.yLin*(1-t)+d.ySig*t;return yS(v);})(lineData));}drawState(0);const labelL=svg.append('text').attr('x',W/2).attr('y',22).attr('text-anchor','middle').attr('font-size','14px').attr('font-weight','600').attr('fill','#57534e').text('log-odds = z  (linear)');const labelS=svg.append('text').attr('x',W/2).attr('y',22).attr('text-anchor','middle').attr('font-size','14px').attr('font-weight','600').attr('fill','#0d6e6e').text('σ(z) = 1/(1+e⁻ᶻ)  (sigmoid)').attr('opacity',0);const btnRow=wrap.append('div').style('display','flex').style('gap','12px').style('padding','8px 16px').style('justify-content','center');const btn=btnRow.append('button').text('Transform →').style('padding','8px 24px').style('font-size','14px').style('font-weight','600').style('border','2px solid #0d6e6e').style('border-radius','8px').style('background','#0d6e6e').style('color','#fff').style('cursor','pointer').style('font-family','system-ui').style('transition','all 0.2s');btn.on('click',function(){if(isLinear){const dur=1200;let start=null;function anim(ts){if(!start)start=ts;const t=Math.min((ts-start)/dur,1);const ease=t<0.5?2*t*t:(4-2*t)*t-1;drawState(ease);labelL.attr('opacity',1-ease);labelS.attr('opacity',ease);if(t<1)requestAnimationFrame(anim);}requestAnimationFrame(anim);isLinear=false;btn.text('← Reset');}else{const dur=800;let start=null;function anim(ts){if(!start)start=ts;const t=Math.min((ts-start)/dur,1);const ease=t<0.5?2*t*t:(4-2*t)*t-1;drawState(1-ease);labelL.attr('opacity',ease);labelS.attr('opacity',1-ease);if(t<1)requestAnimationFrame(anim);}requestAnimationFrame(anim);isLinear=true;btn.text('Transform →');}});" }
+\`\`\`
+
+The linear function maps inputs to any value — including impossible ones outside [0, 1]. The sigmoid squashes everything into the valid probability range. The transition shows they're the same underlying relationship, just viewed through different lenses.
 
 [sidenote: The sigmoid function has a beautiful property: its derivative σ'(z) = σ(z)(1-σ(z)), which makes gradient computation elegant and efficient.]
+
+Now explore how the parameters affect the shape. **a** controls steepness (how confident the model is), **b** shifts the decision point left or right:
+
+\`\`\`d3
+{ "width": 700, "height": 400, "code": "const W=700,H=320,margin={top:10,right:40,bottom:50,left:55};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const eqDiv=wrap.append('div').style('text-align','center').style('padding','8px 0 4px').style('font-size','18px');function renderEq(a,b){const K=window.katex;const bs=b>=0?'+'+b.toFixed(1):b.toFixed(1);const tex=\`\\\\\\\\sigma(x)=\\\\\\\\dfrac{1}{1+e^{-(\${a.toFixed(1)}\\\\\\\\,x\\\\\\\\,\${bs})}}\`;if(K){eqDiv.html('');K.render(tex,eqDiv.node(),{displayMode:false,throwOnError:false});}else{eqDiv.text(\`σ(x) = 1/(1+e^-(\${a.toFixed(1)}x + \${b.toFixed(1)}))\`);}}const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xS=d3.scaleLinear().domain([-6,6]).range([0,iW]),yS=d3.scaleLinear().domain([0,1]).range([iH,0]);g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(6)).selectAll('text').attr('fill','#57534e');const ref=[];for(let z=-6;z<=6;z+=0.1)ref.push({z,y:1/(1+Math.exp(-z))});const ln=d3.line().x(d=>xS(d.z)).y(d=>yS(d.y)).curve(d3.curveBasis);g.append('path').datum(ref).attr('d',ln).attr('fill','none').attr('stroke','#a3a3a3').attr('stroke-width',1.5).attr('stroke-dasharray','6,4').attr('opacity',0.5);g.append('text').attr('x',iW-2).attr('y',yS(0.95)).attr('text-anchor','end').attr('font-size','10px').attr('fill','#a3a3a3').text('a=1, b=0');g.append('line').attr('x1',0).attr('y1',yS(0.5)).attr('x2',iW).attr('y2',yS(0.5)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','5,5');const curve=g.append('path').attr('fill','none').attr('stroke','#0d6e6e').attr('stroke-width',3);const dot=g.append('circle').attr('r',5).attr('fill','#0d6e6e');const lbl=g.append('text').attr('font-size','11px').attr('fill','#0d6e6e').attr('font-weight','600');function upd(a,b){const d=[];for(let z=-6;z<=6;z+=0.1)d.push({z,y:1/(1+Math.exp(-(a*z+b)))});curve.datum(d).attr('d',ln);const mx=a!==0?-b/a:0;if(a!==0&&mx>=-6&&mx<=6){dot.attr('cx',xS(mx)).attr('cy',yS(0.5)).attr('opacity',1);lbl.attr('x',xS(mx)+8).attr('y',yS(0.56)).text(\`(\${mx.toFixed(1)}, 0.5)\`).attr('opacity',1);}else{dot.attr('opacity',0);lbl.attr('opacity',0);}renderEq(a,b);}const ctrls=wrap.append('div').style('display','flex').style('gap','24px').style('padding','8px 16px').style('font-size','13px').style('font-family','system-ui, sans-serif').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');function mkS(p,lab,mn,mx,st,ini,cb){const r=p.append('div').style('display','flex').style('align-items','center').style('gap','8px').style('flex','1');r.append('span').style('font-weight','600').style('min-width','90px').text(lab);const inp=r.append('input').attr('type','range').attr('min',mn).attr('max',mx).attr('step',st).attr('value',ini).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const v=r.append('span').style('min-width','32px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text(ini.toFixed(1));inp.on('input',function(){const n=+this.value;v.text(n.toFixed(1));cb(n);});}let A=1,B=0;mkS(ctrls,'a (steepness)',-3,3,0.1,1,v=>{A=v;upd(A,B);});mkS(ctrls,'b (shift)',-5,5,0.1,0,v=>{B=v;upd(A,B);});upd(1,0);" }
+\`\`\`
 
 ### The Complete Model
 
@@ -863,61 +909,13 @@ $$P(y=1|x) = \\sigma(w^T x + b) = \\frac{1}{1 + e^{-(w^T x + b)}}$$
 
 The **decision boundary** occurs where $P(y=1|x) = 0.5$, which happens when $w^T x + b = 0$.
 
-\`\`\`quiz
-{
-  "id": "sigmoid-basics",
-  "title": "Check Your Understanding",
-  "description": "Test your grasp of the sigmoid function",
-  "questions": [
-    {
-      "id": "q1",
-      "type": "multiple-choice",
-      "question": "What is the output of the sigmoid function when z = 0?",
-      "options": [
-        "0",
-        "0.5",
-        "1",
-        "Undefined"
-      ],
-      "correctAnswer": 1,
-      "explanation": "When z = 0, σ(0) = 1/(1+e⁰) = 1/(1+1) = 0.5. This is the decision boundary threshold."
-    }
-  ],
-  "passingScore": 100,
-  "feedbackOnPass": "Correct! The sigmoid outputs 0.5 at z=0, which is our decision threshold.",
-  "feedbackOnFail": "Review the sigmoid function formula above."
-}
-\`\`\``},{id:"theory",title:"Theory",content:`### Odds and Log-Odds
+So logistic regression is really just linear regression on log-odds, mapped back to probability through the sigmoid. The "regression" in the name refers to this linear modeling of the log-odds — even though we use it for classification.`},{id:"theory",title:"Theory",content:`### Interpreting Coefficients
 
-To understand logistic regression deeply, we need to think about **odds**. If the probability of success is $p$, the odds are:
+Before we learn how to find the best weights, let's understand what they mean. Since we model log-odds as a linear function, each weight has a clean interpretation.
 
-$$\\text{odds} = \\frac{p}{1-p}$$
-
-[note: Odds of 2:1 means you're twice as likely to win as to lose. A probability of 0.67 corresponds to odds of 2.]
-
-The **log-odds** (or **logit**) is simply the logarithm of the odds:
-
-$$\\text{logit}(p) = \\log\\left(\\frac{p}{1-p}\\right)$$
-
-Here's the key insight: **logistic regression models the log-odds as a linear function of features**:
-
-$$\\log\\left(\\frac{P(y=1|x)}{1-P(y=1|x)}\\right) = w^T x + b$$
-
-\`\`\`d3
-{
-  "width": 700,
-  "height": 350,
-  "code": "const width=700,height=350;const margin={top:50,right:50,bottom:60,left:60};const innerWidth=width-margin.left-margin.right;const innerHeight=height-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const svg=d3.select(container).append('svg').attr('width',width).attr('height',height);svg.append('rect').attr('width',width).attr('height',height).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xScale=d3.scaleLinear().domain([0.01,0.99]).range([0,innerWidth]);const yScale=d3.scaleLinear().domain([-5,5]).range([innerHeight,0]);g.append('g').attr('opacity',0.15).call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${innerHeight})\`).attr('opacity',0.15).call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(''));g.append('g').call(d3.axisLeft(yScale).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${innerHeight})\`).call(d3.axisBottom(xScale).ticks(5)).selectAll('text').attr('fill','#57534e');const logitData=[];for(let p=0.02;p<=0.98;p+=0.01){logitData.push({p,logit:Math.log(p/(1-p))});}const line=d3.line().x(d=>xScale(d.p)).y(d=>yScale(d.logit)).curve(d3.curveBasis);g.append('path').datum(logitData).attr('d',line).attr('fill','none').attr('stroke','#8b5cf6').attr('stroke-width',3);g.append('line').attr('x1',xScale(0.5)).attr('y1',yScale(-5)).attr('x2',xScale(0.5)).attr('y2',yScale(5)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','5,5');g.append('circle').attr('cx',xScale(0.5)).attr('cy',yScale(0)).attr('r',6).attr('fill','#8b5cf6');svg.append('text').attr('x',width/2).attr('y',25).attr('text-anchor','middle').attr('font-size','16px').attr('font-weight','600').text('The Logit Function: log(p/(1-p))');svg.append('text').attr('x',width/2).attr('y',height-10).attr('text-anchor','middle').attr('font-size','12px').attr('fill','#57534e').text('Probability p');svg.append('text').attr('transform','rotate(-90)').attr('x',-height/2).attr('y',20).attr('text-anchor','middle').attr('font-size','12px').attr('fill','#57534e').text('Log-Odds');"
-}
-\`\`\`
-
-### Interpreting Coefficients
-
-One of the beauties of logistic regression is coefficient interpretability. For a unit increase in feature $x_j$:
+A one-unit increase in feature $x_j$ adds $w_j$ to the log-odds. In terms of odds:
 
 $$\\text{odds ratio} = e^{w_j}$$
-
-[sidenote: If w_j = 0.7, then e^0.7 ≈ 2, meaning each unit increase in x_j doubles the odds of the positive class.]
 
 | Coefficient $w_j$ | Odds Ratio $e^{w_j}$ | Interpretation |
 |-------------------|----------------------|----------------|
@@ -926,23 +924,37 @@ $$\\text{odds ratio} = e^{w_j}$$
 | 0.5 | 1.65 | Each unit increase raises odds by 65% |
 | 1.0 | 2.72 | Each unit increase nearly triples the odds |
 
-### Maximum Likelihood Estimation
+[sidenote: This interpretability is one of logistic regression's biggest practical advantages over black-box models. You can tell a doctor: "each 10-year increase in age doubles the odds of the disease."]
 
-How do we find the best weights? We use **Maximum Likelihood Estimation (MLE)**: find the weights that make the observed data most probable.
+### Finding the Best Weights
 
-For a single training example $(x_i, y_i)$:
+We have the model shape. Now: how do we find weights that fit the data?
+
+Our first instinct might be **least squares** — minimize the squared difference between predictions and labels. But this doesn't work well for probabilities. The squared-error loss surface for logistic regression is bumpy (non-convex), with local minima that trap the optimizer.
+
+Instead, we ask a different question: **what weights make the observed data most probable?**
+
+This is **Maximum Likelihood Estimation**. For each training point, the model predicts a probability. If the true label is 1, we want that probability to be high. If the true label is 0, we want it to be low. The likelihood is the product of getting all labels right.
+
+For a single example $(x_i, y_i)$:
 
 $$P(y_i | x_i; w) = \\hat{p}_i^{y_i} (1-\\hat{p}_i)^{1-y_i}$$
 
-where $\\hat{p}_i = \\sigma(w^T x_i + b)$.
+[note: When y=1, this becomes just p̂. When y=0, it becomes (1-p̂). A compact way to write "probability of the correct label."]
 
-[note: When y=1, this becomes just p̂. When y=0, it becomes (1-p̂). Clever encoding!]
+Drag the weight slider below. Watch how the sigmoid shifts, and how the likelihood (product of correct-label probabilities) changes. The best weight is where the likelihood peaks:
 
-Taking the log and summing over all examples gives the **log-likelihood**:
+\`\`\`d3
+{
+  "width": 700,
+  "height": 420,
+  "code": "const W=700,H=340,margin={top:10,right:40,bottom:40,left:55};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const pts=[{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:5,y:1},{x:6,y:1},{x:7,y:1}];const xS=d3.scaleLinear().domain([0,8]).range([0,iW]);const yS=d3.scaleLinear().domain([-0.1,1.1]).range([iH,0]);g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(8)).selectAll('text').attr('fill','#57534e');g.append('line').attr('x1',0).attr('y1',yS(0.5)).attr('x2',iW).attr('y2',yS(0.5)).attr('stroke','#a3a3a3').attr('stroke-width',1).attr('stroke-dasharray','3,3');const curve=g.append('path').attr('fill','none').attr('stroke','#0d6e6e').attr('stroke-width',2.5);const probLines=pts.map(()=>g.append('line').attr('stroke-width',2).attr('stroke-dasharray','4,3'));const dotsPt=g.selectAll('.dp').data(pts).enter().append('circle').attr('cx',d=>xS(d.x)).attr('cy',d=>yS(d.y)).attr('r',7).attr('fill',d=>d.y===0?'#3b82f6':'#ef4444').attr('stroke','#fff').attr('stroke-width',2);const likBar=g.append('rect').attr('x',iW-30).attr('width',20).attr('fill','#0d6e6e').attr('rx',3).attr('opacity',0.8);const likLabel=g.append('text').attr('x',iW-20).attr('text-anchor','middle').attr('font-size','11px').attr('fill','#0d6e6e').attr('font-weight','600');const eqText=svg.append('text').attr('x',W/2).attr('y',20).attr('text-anchor','middle').attr('font-size','13px').attr('fill','#57534e');function upd(w){const b=-w*4;const sigmoid=x=>1/(1+Math.exp(-(w*x+b)));const sd=[];for(let x=0;x<=8;x+=0.1)sd.push({x,y:sigmoid(x)});const ln=d3.line().x(d=>xS(d.x)).y(d=>yS(d.y)).curve(d3.curveBasis);curve.attr('d',ln(sd));let lik=1;pts.forEach((p,i)=>{const pr=sigmoid(p.x);const correctP=p.y===1?pr:1-pr;lik*=correctP;probLines[i].attr('x1',xS(p.x)).attr('x2',xS(p.x)).attr('y1',yS(p.y)).attr('y2',yS(sigmoid(p.x))).attr('stroke',correctP>0.5?'#22c55e':'#ef4444').attr('opacity',0.6);});const barH=Math.max(2,lik*iH);likBar.attr('y',yS(0)-barH).attr('height',barH);likLabel.attr('y',yS(0)-barH-6).text(\`L=\${lik.toFixed(4)}\`);eqText.text(\`w = \${w.toFixed(1)}, b = \${b.toFixed(1)}   →   Likelihood = \${lik.toFixed(4)}\`);}const ctrls=wrap.append('div').style('display','flex').style('align-items','center').style('gap','12px').style('padding','8px 50px').style('font-size','13px').style('font-family','system-ui').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');ctrls.append('span').style('font-weight','600').style('min-width','90px').text('Weight (w)');const inp=ctrls.append('input').attr('type','range').attr('min',-2).attr('max',4).attr('step',0.1).attr('value',1).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const valSpan=ctrls.append('span').style('min-width','36px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text('1.0');inp.on('input',function(){const v=+this.value;valSpan.text(v.toFixed(1));upd(v);});upd(1);"
+}
+\`\`\`
 
-$$\\ell(w) = \\sum_{i=1}^m \\left[ y_i \\log(\\hat{p}_i) + (1-y_i)\\log(1-\\hat{p}_i) \\right]$$
+### Cross-Entropy Loss
 
-Maximizing this is equivalent to minimizing the **binary cross-entropy loss**:
+Taking the negative log of the likelihood gives us the **cross-entropy loss**. Minimizing this is equivalent to maximizing likelihood, but gives us a convex optimization problem — one clean minimum, no traps:
 
 $$\\mathcal{L}(w) = -\\frac{1}{m}\\sum_{i=1}^m \\left[ y_i \\log(\\hat{p}_i) + (1-y_i)\\log(1-\\hat{p}_i) \\right]$$
 
@@ -954,11 +966,11 @@ $$\\mathcal{L}(w) = -\\frac{1}{m}\\sum_{i=1}^m \\left[ y_i \\log(\\hat{p}_i) + (
 }
 \`\`\`
 
-**Intuition**: When $y=1$, we want high $\\hat{p}$ (low loss on blue curve). When $y=0$, we want low $\\hat{p}$ (low loss on red curve).
+**Intuition**: When $y=1$, we punish low predictions severely (blue curve shoots up). When $y=0$, we punish high predictions severely (red curve). The punishment grows without bound as predictions approach the wrong extreme.
 
 ### Gradient Descent
 
-Unlike linear regression, there's no closed-form solution. We use **gradient descent**:
+Unlike linear regression, there's no closed-form solution for the optimal weights. We use **gradient descent**: start with random weights, compute the gradient of the loss, and take a small step downhill. Repeat.
 
 $$w := w - \\alpha \\nabla_w \\mathcal{L}(w)$$
 
@@ -968,29 +980,17 @@ $$\\nabla_w \\mathcal{L} = \\frac{1}{m} \\sum_{i=1}^m (\\hat{p}_i - y_i) x_i$$
 
 [sidenote: This is the same form as linear regression's gradient! The difference is that p̂ passes through the sigmoid instead of being linear.]
 
-\`\`\`interactive-tuner
+\`\`\`d3
 {
-  "id": "learning-rate-tuner",
-  "title": "Gradient Descent Learning Rate",
-  "description": "See how learning rate affects convergence",
-  "parameters": [
-    {
-      "name": "alpha",
-      "label": "Learning Rate (α)",
-      "type": "slider",
-      "min": 0.01,
-      "max": 2,
-      "step": 0.01,
-      "default": 0.1,
-      "unit": ""
-    }
-  ],
-  "linkedVisualization": "gradient-descent-viz",
-  "explanation": "Too small: slow convergence. Too large: may overshoot and diverge. Typical values: 0.001 to 0.1."
+  "width": 700,
+  "height": 380,
+  "code": "const W=700,H=300,margin={top:30,right:40,bottom:50,left:60};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const xS=d3.scaleLinear().domain([-3,5]).range([0,iW]);const yS=d3.scaleLinear().domain([0,3]).range([iH,0]);g.append('g').attr('opacity',0.12).call(d3.axisLeft(yS).tickSize(-iW).tickFormat(''));g.append('g').attr('transform',\`translate(0,\${iH})\`).attr('opacity',0.12).call(d3.axisBottom(xS).tickSize(-iH).tickFormat(''));g.append('g').call(d3.axisLeft(yS).ticks(5)).selectAll('text').attr('fill','#57534e');g.append('g').attr('transform',\`translate(0,\${iH})\`).call(d3.axisBottom(xS).ticks(8)).selectAll('text').attr('fill','#57534e');svg.append('text').attr('x',W/2).attr('y',18).attr('text-anchor','middle').attr('font-size','14px').attr('font-weight','600').text('Gradient Descent on Loss Surface');svg.append('text').attr('x',W/2).attr('y',H-5).attr('text-anchor','middle').attr('font-size','11px').attr('fill','#57534e').text('Weight (w)');function loss(w){return 0.3*Math.pow(w-1.5,2)+0.5;}const lossData=[];for(let w=-3;w<=5;w+=0.05)lossData.push({w,l:loss(w)});const ln=d3.line().x(d=>xS(d.w)).y(d=>yS(d.l)).curve(d3.curveBasis);g.append('path').datum(lossData).attr('d',ln).attr('fill','none').attr('stroke','#8b5cf6').attr('stroke-width',3);function dLoss(w){return 0.6*(w-1.5);}const trail=g.append('path').attr('fill','none').attr('stroke','#0d6e6e').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');const ball=g.append('circle').attr('r',8).attr('fill','#0d6e6e').attr('stroke','#fff').attr('stroke-width',2);const stepText=g.append('text').attr('font-size','11px').attr('fill','#0d6e6e').attr('font-weight','600');let animId=null;function animate(lr){if(animId)cancelAnimationFrame(animId);let w=-2;const history=[{w,l:loss(w)}];let step=0;ball.attr('cx',xS(w)).attr('cy',yS(loss(w)));trail.attr('d','');stepText.text('');function tick(){const grad=dLoss(w);w=w-lr*grad;const l=loss(w);history.push({w,l});step++;trail.attr('d',d3.line().x(d=>xS(d.w)).y(d=>yS(d.l))(history));ball.transition().duration(80).attr('cx',xS(w)).attr('cy',yS(l));stepText.attr('x',xS(w)+12).attr('y',yS(l)-4).text(\`step \${step}, w=\${w.toFixed(2)}\`);if(step<30&&Math.abs(grad)>0.01)animId=setTimeout(tick,120);else stepText.text(\`Converged: w=\${w.toFixed(2)}, loss=\${l.toFixed(3)}\`);}tick();}const ctrls=wrap.append('div').style('display','flex').style('align-items','center').style('gap','12px').style('padding','8px 50px').style('font-size','13px').style('font-family','system-ui').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');ctrls.append('span').style('font-weight','600').style('min-width','110px').text('Learning Rate (α)');const lrInp=ctrls.append('input').attr('type','range').attr('min',0.05).attr('max',2.5).attr('step',0.05).attr('value',0.5).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const lrVal=ctrls.append('span').style('min-width','36px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text('0.50');const runBtn=ctrls.append('button').text('Run').style('padding','5px 16px').style('font-size','13px').style('border','2px solid #0d6e6e').style('border-radius','6px').style('background','#0d6e6e').style('color','#fff').style('cursor','pointer').style('font-family','system-ui');lrInp.on('input',function(){lrVal.text((+this.value).toFixed(2));});runBtn.on('click',function(){animate(+lrInp.node().value);});animate(0.5);"
 }
-\`\`\``},{id:"decision-boundaries",title:"Decision Boundaries",content:`### Linear Decision Boundary
+\`\`\`
 
-The decision boundary for logistic regression is where $P(y=1|x) = 0.5$, which means $w^T x + b = 0$. In 2D, this is a straight line:
+Try different learning rates. Too small (0.05): the ball crawls. Too large (2.0+): it overshoots and bounces. The sweet spot depends on the problem.`},{id:"practical",title:"Practical",content:`### Decision Boundary
+
+We have probabilities. Now we need to decide: class 0 or class 1? The decision boundary is where $P(y=1|x) = 0.5$.
 
 \`\`\`d3
 {
@@ -1001,6 +1001,18 @@ The decision boundary for logistic regression is where $P(y=1|x) = 0.5$, which m
 \`\`\`
 
 [sidenote: The background color shows the predicted probability—darker red means higher P(y=1), darker blue means lower P(y=1). The boundary is where the color transitions through white (P=0.5).]
+
+### Threshold Tuning
+
+The default threshold is 0.5, but it doesn't have to be. In medical diagnosis, you might lower it to catch more true positives. In spam filtering, raise it to avoid false positives.
+
+\`\`\`d3
+{
+  "width": 700,
+  "height": 380,
+  "code": "const W=700,H=300,margin={top:20,right:40,bottom:30,left:40};const iW=W-margin.left-margin.right,iH=H-margin.top-margin.bottom;d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const g=svg.append('g').attr('transform',\`translate(\${margin.left},\${margin.top})\`);const samples=[{p:0.05,y:0},{p:0.12,y:0},{p:0.18,y:0},{p:0.22,y:0},{p:0.28,y:0},{p:0.33,y:0},{p:0.38,y:1},{p:0.42,y:0},{p:0.47,y:0},{p:0.52,y:1},{p:0.55,y:1},{p:0.61,y:0},{p:0.65,y:1},{p:0.72,y:1},{p:0.76,y:1},{p:0.81,y:1},{p:0.85,y:1},{p:0.89,y:1},{p:0.93,y:1},{p:0.97,y:1}];const xS=d3.scaleLinear().domain([0,1]).range([0,iW]);g.append('line').attr('x1',0).attr('y1',30).attr('x2',iW).attr('y2',30).attr('stroke','#e5e5e5').attr('stroke-width',2);const dots=g.selectAll('.dot').data(samples).enter().append('circle').attr('cx',d=>xS(d.p)).attr('cy',30).attr('r',8).attr('stroke','#fff').attr('stroke-width',2);const threshLine=g.append('line').attr('y1',10).attr('y2',50).attr('stroke','#0d6e6e').attr('stroke-width',3).attr('stroke-dasharray','6,3');const threshLabel=g.append('text').attr('y',8).attr('font-size','11px').attr('fill','#0d6e6e').attr('font-weight','600').attr('text-anchor','middle');const cmG=g.append('g').attr('transform',\`translate(\${iW/2-100},70)\`);const cmCells=[{label:'TP',x:0,y:0,color:'#22c55e'},{label:'FP',x:100,y:0,color:'#ef4444'},{label:'FN',x:0,y:50,color:'#f97316'},{label:'TN',x:100,y:50,color:'#3b82f6'}];const cmRects=cmCells.map(c=>{const cg=cmG.append('g').attr('transform',\`translate(\${c.x},\${c.y})\`);cg.append('rect').attr('width',95).attr('height',45).attr('rx',6).attr('fill',c.color).attr('opacity',0.15).attr('stroke',c.color).attr('stroke-width',1.5);cg.append('text').attr('x',48).attr('y',18).attr('text-anchor','middle').attr('font-size','11px').attr('fill',c.color).attr('font-weight','600').text(c.label);const val=cg.append('text').attr('x',48).attr('y',36).attr('text-anchor','middle').attr('font-size','16px').attr('fill',c.color).attr('font-weight','700');return val;});const metricsG=g.append('g').attr('transform',\`translate(\${iW/2-150},185)\`);const metricLabels=['Precision','Recall','F1'];const metricTexts=metricLabels.map((l,i)=>{const mg=metricsG.append('g').attr('transform',\`translate(\${i*100},0)\`);mg.append('text').attr('y',0).attr('font-size','11px').attr('fill','#57534e').attr('font-weight','600').text(l);return mg.append('text').attr('y',18).attr('font-size','16px').attr('fill','#0d6e6e').attr('font-weight','700');});function upd(t){threshLine.attr('x1',xS(t)).attr('x2',xS(t));threshLabel.attr('x',xS(t)).text(t.toFixed(2));dots.attr('fill',d=>d.p>=t?'#ef4444':'#3b82f6');let tp=0,fp=0,fn=0,tn=0;samples.forEach(s=>{const pred=s.p>=t?1:0;if(pred===1&&s.y===1)tp++;else if(pred===1&&s.y===0)fp++;else if(pred===0&&s.y===1)fn++;else tn++;});cmRects[0].text(tp);cmRects[1].text(fp);cmRects[2].text(fn);cmRects[3].text(tn);const prec=tp+fp>0?tp/(tp+fp):0;const rec=tp+fn>0?tp/(tp+fn):0;const f1=prec+rec>0?2*prec*rec/(prec+rec):0;metricTexts[0].text(prec.toFixed(2));metricTexts[1].text(rec.toFixed(2));metricTexts[2].text(f1.toFixed(2));}const ctrls=wrap.append('div').style('display','flex').style('align-items','center').style('gap','12px').style('padding','8px 50px').style('font-size','13px').style('font-family','system-ui').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');ctrls.append('span').style('font-weight','600').style('min-width','80px').text('Threshold');const inp=ctrls.append('input').attr('type','range').attr('min',0.05).attr('max',0.95).attr('step',0.01).attr('value',0.5).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const valSpan=ctrls.append('span').style('min-width','36px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text('0.50');inp.on('input',function(){const v=+this.value;valSpan.text(v.toFixed(2));upd(v);});upd(0.5);"
+}
+\`\`\`
 
 ### Probability Calibration
 
@@ -1035,7 +1047,9 @@ A key advantage of logistic regression: **well-calibrated probabilities**. When 
     "legend": {"x": 0.05, "y": 0.95}
   }
 }
-\`\`\``},{id:"regularization",title:"Regularization",content:`### Preventing Overfitting
+\`\`\`
+
+### Regularization
 
 When features outnumber samples or when features are correlated, logistic regression can overfit. Regularization adds a penalty for large weights:
 
@@ -1047,29 +1061,15 @@ $$\\mathcal{L}_{L1} = \\mathcal{L} + \\lambda\\|w\\|_1$$
 
 [note: L1 produces sparse solutions (many weights become exactly 0), useful for feature selection. L2 shrinks weights but rarely sets them to exactly 0.]
 
-\`\`\`interactive-tuner
+\`\`\`d3
 {
-  "id": "regularization-tuner",
-  "title": "Explore Regularization Strength",
-  "description": "See how regularization affects model complexity",
-  "parameters": [
-    {
-      "name": "lambda",
-      "label": "λ (Regularization)",
-      "type": "slider",
-      "min": 0,
-      "max": 10,
-      "step": 0.1,
-      "default": 1,
-      "unit": ""
-    }
-  ],
-  "linkedVisualization": "regularization-viz",
-  "explanation": "Higher λ: simpler model, may underfit. Lower λ: complex model, may overfit. Cross-validate to find optimal value."
+  "width": 700,
+  "height": 350,
+  "code": "const W=700,H=280,margin={top:30,right:20,bottom:30,left:20};d3.select(container).selectAll('*').remove();const wrap=d3.select(container).style('display','flex').style('flex-direction','column');const svg=wrap.append('svg').attr('width',W).attr('height',H).attr('viewBox',\`0 0 \${W} \${H}\`);svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fafaf9');const trueCoefs=[2.5,-1.8,1.2,-0.8,0.3,0.1,-0.05,0.02];const labels=trueCoefs.map((_,i)=>\`w\${i+1}\`);const halfW=W/2-30;function drawBars(parent,x,title,getCoefs){const gg=parent.append('g').attr('transform',\`translate(\${x},\${margin.top})\`);gg.append('text').attr('x',halfW/2).attr('y',-12).attr('text-anchor','middle').attr('font-size','13px').attr('font-weight','600').attr('fill','#57534e').text(title);const barH=H-margin.top-margin.bottom;const yS=d3.scaleBand().domain(labels).range([0,barH]).padding(0.25);const xS=d3.scaleLinear().domain([-3,3]).range([0,halfW]);gg.append('line').attr('x1',xS(0)).attr('y1',0).attr('x2',xS(0)).attr('y2',barH).attr('stroke','#a3a3a3').attr('stroke-width',1);const bars=gg.selectAll('.bar').data(labels).enter().append('rect').attr('y',d=>yS(d)).attr('height',yS.bandwidth()).attr('rx',2);const vals=gg.selectAll('.val').data(labels).enter().append('text').attr('y',d=>yS(d)+yS.bandwidth()/2+4).attr('font-size','10px').attr('font-weight','600');gg.selectAll('.lab').data(labels).enter().append('text').attr('x',2).attr('y',d=>yS(d)+yS.bandwidth()/2+4).attr('font-size','10px').attr('fill','#78716c').text(d=>d);return function(lam){const c=getCoefs(lam);bars.data(c).attr('x',d=>d>=0?xS(0):xS(d)).attr('width',d=>Math.abs(xS(d)-xS(0))).attr('fill',d=>d>=0?'#0d6e6e':'#8b5cf6');vals.data(c).attr('x',d=>d>=0?xS(d)+3:xS(d)-3).attr('text-anchor',d=>d>=0?'start':'end').attr('fill',d=>d>=0?'#0d6e6e':'#8b5cf6').text(d=>d.toFixed(2));};}function l1Coefs(lam){return trueCoefs.map(c=>{const s=Math.sign(c);const v=Math.max(0,Math.abs(c)-lam*0.3);return s*v;});}function l2Coefs(lam){return trueCoefs.map(c=>c/(1+lam*0.3));}const updL1=drawBars(svg,20,'L1 (Lasso)',l1Coefs);const updL2=drawBars(svg,halfW+40,'L2 (Ridge)',l2Coefs);const ctrls=wrap.append('div').style('display','flex').style('align-items','center').style('gap','12px').style('padding','8px 50px').style('font-size','13px').style('font-family','system-ui').style('color','#57534e').style('background','#f5f5f4').style('border-radius','0 0 6px 6px');ctrls.append('span').style('font-weight','600').style('min-width','70px').text('λ');const inp=ctrls.append('input').attr('type','range').attr('min',0).attr('max',10).attr('step',0.1).attr('value',0).style('flex','1').style('accent-color','#0d6e6e').style('cursor','pointer');const valSpan=ctrls.append('span').style('min-width','36px').style('text-align','right').style('font-weight','700').style('color','#0d6e6e').text('0.0');inp.on('input',function(){const v=+this.value;valSpan.text(v.toFixed(1));updL1(v);updL2(v);});updL1(0);updL2(0);"
 }
 \`\`\`
 
-### Effect on Coefficients
+As regularization increases, all coefficients shrink toward zero. Notice how L1 drives small weights to exactly zero (sparsity), while L2 shrinks them proportionally.
 
 \`\`\`plotly
 {
@@ -1109,48 +1109,9 @@ $$\\mathcal{L}_{L1} = \\mathcal{L} + \\lambda\\|w\\|_1$$
 }
 \`\`\`
 
-As regularization increases, all coefficients shrink toward zero. Notice how the noisy feature shrinks fastest.
+### Multi-class Classification
 
-\`\`\`quiz
-{
-  "id": "regularization-quiz",
-  "title": "Regularization Check",
-  "description": "Test your understanding of regularization",
-  "questions": [
-    {
-      "id": "r1",
-      "type": "multiple-choice",
-      "question": "Which regularization type is better for feature selection?",
-      "options": [
-        "L2 (Ridge)",
-        "L1 (Lasso)",
-        "Both are equally good",
-        "Neither performs feature selection"
-      ],
-      "correctAnswer": 1,
-      "explanation": "L1 regularization can drive coefficients to exactly zero, effectively removing features from the model. L2 only shrinks them."
-    },
-    {
-      "id": "r2",
-      "type": "multiple-choice",
-      "question": "What happens if λ is set too high?",
-      "options": [
-        "Overfitting",
-        "Underfitting",
-        "Perfect generalization",
-        "Faster training"
-      ],
-      "correctAnswer": 1,
-      "explanation": "High λ penalizes model complexity heavily, shrinking all coefficients toward zero, leading to underfitting."
-    }
-  ],
-  "passingScore": 50,
-  "feedbackOnPass": "Great understanding of regularization!",
-  "feedbackOnFail": "Review the regularization section."
-}
-\`\`\``},{id:"multi-class-classification",title:"Multi-class Classification",content:`### One-vs-Rest (OvR)
-
-For K classes, train K binary classifiers, each distinguishing one class from all others:
+For K classes, the **One-vs-Rest (OvR)** approach trains K binary classifiers, each distinguishing one class from all others:
 
 \`\`\`d3
 {
@@ -1160,9 +1121,7 @@ For K classes, train K binary classifiers, each distinguishing one class from al
 }
 \`\`\`
 
-### Softmax Regression (Multinomial)
-
-A more principled approach: directly model probabilities for all K classes:
+A more principled approach is **Softmax Regression (Multinomial)**, which directly models probabilities for all K classes:
 
 $$P(y=k|x) = \\frac{e^{w_k^T x}}{\\sum_{j=1}^K e^{w_j^T x}}$$
 
@@ -1190,7 +1149,9 @@ This is called the **softmax function**—it generalizes sigmoid to multiple cla
     "yaxis": {"title": "Test Sample"}
   }
 }
-\`\`\``},{id:"practical-considerations",title:"Practical Considerations",content:`### When to Use Logistic Regression
+\`\`\`
+
+### When to Use Logistic Regression
 
 | Scenario | Recommendation |
 |----------|---------------|
@@ -1200,8 +1161,6 @@ This is called the **softmax function**—it generalizes sigmoid to multiple cla
 | High-dimensional sparse data (text) | Very effective |
 | Complex non-linear patterns | Consider other methods |
 | Very large dataset (>1M samples) | Fast and scalable |
-
-### Comparison with Other Methods
 
 \`\`\`plotly
 {
@@ -1242,14 +1201,16 @@ This is called the **softmax function**—it generalizes sigmoid to multiple cla
 }
 \`\`\`
 
-### Feature Engineering Tips
+**Feature Engineering Tips**:
 
 1. **Scale features**: Logistic regression is sensitive to feature scales when using regularization
 2. **Handle missing values**: Impute or create indicator features
 3. **Encode categoricals**: One-hot encoding for nominal, ordinal encoding for ordered categories
 4. **Polynomial features**: Add x² or x₁x₂ terms for non-linear boundaries
 
-[sidenote: Adding polynomial features lets logistic regression learn non-linear boundaries while keeping interpretability of coefficients in the expanded feature space.]`},{id:"code-examples",title:"Code Examples",content:`### Basic Classification
+[sidenote: Adding polynomial features lets logistic regression learn non-linear boundaries while keeping interpretability of coefficients in the expanded feature space.]`},{id:"code",title:"Code",content:`### Logistic Regression from Scratch to Sklearn
+
+Run this complete example: generate data, fit a model, examine coefficients, and visualize the decision boundary.
 
 \`\`\`python
 import numpy as np
@@ -1258,150 +1219,156 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.datasets import make_classification
+import matplotlib.pyplot as plt
 
-# Generate sample data
-X, y = make_classification(n_samples=500, n_features=10, 
-                           n_informative=5, n_redundant=2,
+# Generate 2D data for visualization
+X, y = make_classification(n_samples=300, n_features=2, n_informative=2,
+                           n_redundant=0, n_clusters_per_class=1,
                            random_state=42)
 
 # Split and scale
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X_train_s = scaler.fit_transform(X_train)
+X_test_s = scaler.transform(X_test)
 
-# Train logistic regression
-model = LogisticRegression(C=1.0, random_state=42, max_iter=1000)
-model.fit(X_train_scaled, y_train)
+# Fit model
+model = LogisticRegression(C=1.0, random_state=42)
+model.fit(X_train_s, y_train)
 
-# Evaluate
-y_pred = model.predict(X_test_scaled)
-y_prob = model.predict_proba(X_test_scaled)[:, 1]
-
+# Results
+y_pred = model.predict(X_test_s)
 print(f"Accuracy: {accuracy_score(y_test, y_pred):.3f}")
-print(f"\\nCoefficients (top 5 by magnitude):")
-coef_sorted = sorted(zip(range(10), model.coef_[0]), key=lambda x: abs(x[1]), reverse=True)[:5]
-for idx, coef in coef_sorted:
-    print(f"  Feature {idx}: {coef:.3f} (odds ratio: {np.exp(coef):.3f})")
-print(f"\\nClassification Report:")
-print(classification_report(y_test, y_pred))
-\`\`\`
+print(f"\\nCoefficients: {model.coef_[0].round(3)}")
+print(f"Intercept: {model.intercept_[0]:.3f}")
+print(f"Odds ratios: {np.exp(model.coef_[0]).round(3)}")
+print(f"\\n{classification_report(y_test, y_pred)}")
 
-### Regularization Comparison
-
-\`\`\`python
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import make_classification
-
-# Generate data with some irrelevant features
-X, y = make_classification(n_samples=500, n_features=20, 
-                           n_informative=5, n_redundant=5,
-                           n_clusters_per_class=1, random_state=42)
-X = StandardScaler().fit_transform(X)
-
-# Train with different penalties
-models = {
-    'L2 (C=1)': LogisticRegression(penalty='l2', C=1, solver='lbfgs', max_iter=1000),
-    'L1 (C=1)': LogisticRegression(penalty='l1', C=1, solver='saga', max_iter=1000),
-    'L1 (C=0.1)': LogisticRegression(penalty='l1', C=0.1, solver='saga', max_iter=1000),
-}
-
-print("Coefficient sparsity comparison:")
-print("=" * 50)
-
-for name, model in models.items():
-    model.fit(X, y)
-    coefs = model.coef_[0]
-    n_nonzero = np.sum(np.abs(coefs) > 0.01)
-    print(f"\\n{name}:")
-    print(f"  Non-zero coefficients: {n_nonzero}/20")
-    print(f"  Coefficient range: [{coefs.min():.3f}, {coefs.max():.3f}]")
-    print(f"  Sum of |coefficients|: {np.sum(np.abs(coefs)):.3f}")
-\`\`\``,executablePythonExamples:[{id:"code-examples-python-0",title:"Python Example 1",description:"Code example for Code Examples",code:`import numpy as np
+# Decision boundary plot
+fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+xx, yy = np.meshgrid(np.linspace(X_train_s[:,0].min()-1, X_train_s[:,0].max()+1, 200),
+                      np.linspace(X_train_s[:,1].min()-1, X_train_s[:,1].max()+1, 200))
+Z = model.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1].reshape(xx.shape)
+ax.contourf(xx, yy, Z, levels=20, cmap='RdBu_r', alpha=0.6)
+ax.contour(xx, yy, Z, levels=[0.5], colors='black', linewidths=2)
+ax.scatter(X_train_s[:,0], X_train_s[:,1], c=y_train, cmap='RdBu_r',
+           edgecolors='white', s=50, zorder=5)
+ax.set_title('Logistic Regression Decision Boundary')
+ax.set_xlabel('Feature 1 (scaled)')
+ax.set_ylabel('Feature 2 (scaled)')
+plt.tight_layout()
+plt.show()
+\`\`\``,executablePythonExamples:[{id:"code-python-0",title:"Python Example 1",description:"Code example for Code",code:`import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.datasets import make_classification
+import matplotlib.pyplot as plt
 
-# Generate sample data
-X, y = make_classification(n_samples=500, n_features=10, 
-                           n_informative=5, n_redundant=2,
+# Generate 2D data for visualization
+X, y = make_classification(n_samples=300, n_features=2, n_informative=2,
+                           n_redundant=0, n_clusters_per_class=1,
                            random_state=42)
 
 # Split and scale
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X_train_s = scaler.fit_transform(X_train)
+X_test_s = scaler.transform(X_test)
 
-# Train logistic regression
-model = LogisticRegression(C=1.0, random_state=42, max_iter=1000)
-model.fit(X_train_scaled, y_train)
+# Fit model
+model = LogisticRegression(C=1.0, random_state=42)
+model.fit(X_train_s, y_train)
 
-# Evaluate
-y_pred = model.predict(X_test_scaled)
-y_prob = model.predict_proba(X_test_scaled)[:, 1]
-
+# Results
+y_pred = model.predict(X_test_s)
 print(f"Accuracy: {accuracy_score(y_test, y_pred):.3f}")
-print(f"\\nCoefficients (top 5 by magnitude):")
-coef_sorted = sorted(zip(range(10), model.coef_[0]), key=lambda x: abs(x[1]), reverse=True)[:5]
-for idx, coef in coef_sorted:
-    print(f"  Feature {idx}: {coef:.3f} (odds ratio: {np.exp(coef):.3f})")
-print(f"\\nClassification Report:")
-print(classification_report(y_test, y_pred))`,executable:!0},{id:"code-examples-python-1",title:"Python Example 2",description:"Code example for Code Examples",code:`import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import make_classification
+print(f"\\nCoefficients: {model.coef_[0].round(3)}")
+print(f"Intercept: {model.intercept_[0]:.3f}")
+print(f"Odds ratios: {np.exp(model.coef_[0]).round(3)}")
+print(f"\\n{classification_report(y_test, y_pred)}")
 
-# Generate data with some irrelevant features
-X, y = make_classification(n_samples=500, n_features=20, 
-                           n_informative=5, n_redundant=5,
-                           n_clusters_per_class=1, random_state=42)
-X = StandardScaler().fit_transform(X)
-
-# Train with different penalties
-models = {
-    'L2 (C=1)': LogisticRegression(penalty='l2', C=1, solver='lbfgs', max_iter=1000),
-    'L1 (C=1)': LogisticRegression(penalty='l1', C=1, solver='saga', max_iter=1000),
-    'L1 (C=0.1)': LogisticRegression(penalty='l1', C=0.1, solver='saga', max_iter=1000),
+# Decision boundary plot
+fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+xx, yy = np.meshgrid(np.linspace(X_train_s[:,0].min()-1, X_train_s[:,0].max()+1, 200),
+                      np.linspace(X_train_s[:,1].min()-1, X_train_s[:,1].max()+1, 200))
+Z = model.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1].reshape(xx.shape)
+ax.contourf(xx, yy, Z, levels=20, cmap='RdBu_r', alpha=0.6)
+ax.contour(xx, yy, Z, levels=[0.5], colors='black', linewidths=2)
+ax.scatter(X_train_s[:,0], X_train_s[:,1], c=y_train, cmap='RdBu_r',
+           edgecolors='white', s=50, zorder=5)
+ax.set_title('Logistic Regression Decision Boundary')
+ax.set_xlabel('Feature 1 (scaled)')
+ax.set_ylabel('Feature 2 (scaled)')
+plt.tight_layout()
+plt.show()`,executable:!0}]},{id:"quiz",title:"Quiz",content:`\`\`\`quiz
+{
+  "id": "logistic-regression-comprehensive",
+  "title": "Test Your Understanding",
+  "description": "Key concepts from the article",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "question": "What is the output of the sigmoid function when z = 0?",
+      "options": ["0", "0.5", "1", "Undefined"],
+      "correctAnswer": 1,
+      "explanation": "σ(0) = 1/(1+e⁰) = 1/2 = 0.5. This is the default decision threshold."
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "question": "If a coefficient w_j = 0.7, what does e^0.7 ≈ 2.0 tell us?",
+      "options": [
+        "The feature doubles the probability",
+        "The feature doubles the odds of the positive class",
+        "The feature adds 2 to the prediction",
+        "The feature is twice as important as others"
+      ],
+      "correctAnswer": 1,
+      "explanation": "e^(w_j) is the odds ratio — a one-unit increase in x_j multiplies the odds by e^(w_j). Doubling the odds is not the same as doubling the probability."
+    },
+    {
+      "id": "q3",
+      "type": "multiple-choice",
+      "question": "Why do we use cross-entropy loss instead of squared error for logistic regression?",
+      "options": [
+        "Cross-entropy is faster to compute",
+        "Squared error produces a non-convex loss surface with local minima",
+        "Squared error doesn't work with probabilities",
+        "Cross-entropy always gives lower loss values"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Squared error with the sigmoid produces a bumpy, non-convex loss surface. Cross-entropy gives a convex surface with a single global minimum, making optimization reliable."
+    },
+    {
+      "id": "q4",
+      "type": "multiple-choice",
+      "question": "Which regularization type can drive coefficients to exactly zero?",
+      "options": ["L2 (Ridge)", "L1 (Lasso)", "Both equally", "Neither"],
+      "correctAnswer": 1,
+      "explanation": "L1 regularization can set coefficients to exactly zero, effectively performing feature selection. L2 shrinks them toward zero but never reaches it."
+    },
+    {
+      "id": "q5",
+      "type": "multiple-choice",
+      "question": "When would you lower the classification threshold below 0.5?",
+      "options": [
+        "When you want higher precision",
+        "When false negatives are more costly than false positives",
+        "When you have balanced classes",
+        "When training accuracy is low"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Lowering the threshold catches more positives (higher recall) at the cost of more false positives (lower precision). This is useful when missing a positive case is dangerous, like in medical screening."
+    }
+  ],
+  "passingScore": 60,
+  "feedbackOnPass": "Excellent! You have a solid grasp of logistic regression.",
+  "feedbackOnFail": "Review the sections where you had trouble and try again."
 }
-
-print("Coefficient sparsity comparison:")
-print("=" * 50)
-
-for name, model in models.items():
-    model.fit(X, y)
-    coefs = model.coef_[0]
-    n_nonzero = np.sum(np.abs(coefs) > 0.01)
-    print(f"\\n{name}:")
-    print(f"  Non-zero coefficients: {n_nonzero}/20")
-    print(f"  Coefficient range: [{coefs.min():.3f}, {coefs.max():.3f}]")
-    print(f"  Sum of |coefficients|: {np.sum(np.abs(coefs)):.3f}")`,executable:!0}]},{id:"summary",title:"Summary",content:`Logistic regression is a foundational classification algorithm that combines simplicity with power:
-
-**Core Ideas:**
-- Use sigmoid to convert linear output to probability
-- Log-odds (logit) is linear in features
-- Train by maximizing likelihood (minimizing cross-entropy)
-- Coefficients interpretable as log odds ratios
-
-**When to Use:**
-- Binary or multi-class classification
-- Need interpretable, explainable predictions
-- Need well-calibrated probability estimates
-- Linear decision boundary is sufficient (or with feature engineering)
-- Large-scale datasets requiring fast training
-
-**Key Parameters:**
-- **C**: Inverse regularization strength (higher = less regularization)
-- **penalty**: L1 for sparsity/feature selection, L2 for stability
-- **solver**: 'lbfgs' for L2, 'saga' for L1, 'newton-cg' for multinomial`},{id:"references",title:"References",content:`[1] Hosmer, D. W., Lemeshow, S., & Sturdivant, R. X. (2013). *Applied Logistic Regression* (3rd ed.). Wiley.
-
-[2] Cox, D. R. (1958). The regression analysis of binary sequences. *Journal of the Royal Statistical Society: Series B*, 20(2), 215-242.
-
-[3] Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.`}],timeline:[{year:1838,title:"Logistic Function",description:"Introduction of the logistic curve for population growth",authors:["Pierre François Verhulst"]},{year:1944,title:"Logistic Regression",description:"Term coined, applied to bioassay analysis",authors:["Joseph Berkson"]},{year:1958,title:"Modern Formulation",description:"Statistical framework for binary outcomes",authors:["David Cox"],highlight:!0},{year:1972,title:"Conditional Logistic",description:"Extension for matched case-control studies",authors:["Breslow","Day"]},{year:2004,title:"L1 Regularization",description:"Sparse logistic regression via LASSO penalty",authors:["Ng","Jordan"]}],authors:[{name:"Arun Ayyar",github:"oldmonkABA",affiliation:"Pratyaksha"}]},"svm-article":{id:"svm-article",title:"Support Vector Machines: A Visual Journey",description:"An intuitive, visual exploration of Support Vector Machines—from geometric intuition to the kernel trick.",difficulty:"intermediate",estimatedReadTime:30,sections:[{id:"overview",title:"Overview",content:`### The Geometric Intuition
+\`\`\``}],timeline:[{year:1838,title:"Logistic Function",description:"Introduction of the logistic curve for population growth",authors:["Pierre François Verhulst"]},{year:1944,title:"Logistic Regression",description:"Term coined, applied to bioassay analysis",authors:["Joseph Berkson"]},{year:1958,title:"Modern Formulation",description:"Statistical framework for binary outcomes",authors:["David Cox"],highlight:!0},{year:1972,title:"Conditional Logistic",description:"Extension for matched case-control studies",authors:["Breslow","Day"]},{year:2004,title:"L1 Regularization",description:"Sparse logistic regression via LASSO penalty",authors:["Ng","Jordan"]}],authors:[{name:"Arun Ayyar",github:"oldmonkABA",affiliation:"Pratyaksha"}]},"svm-article":{id:"svm-article",title:"Support Vector Machines: A Visual Journey",description:"An intuitive, visual exploration of Support Vector Machines—from geometric intuition to the kernel trick.",difficulty:"intermediate",estimatedReadTime:30,sections:[{id:"overview",title:"Overview",content:`### The Geometric Intuition
 
 Before diving into mathematics, let's build intuition. Consider two groups of points on a plane—red circles and blue squares. We want to draw a line that separates them.
 
