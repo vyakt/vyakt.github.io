@@ -2,54 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.pratyaksha.in/</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/courses</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/articles</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/compare</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://www.pratyaksha.in/boom-and-bust/</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/course/communication-theory</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/course/supervised-learning</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/intro-to-data-article</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/logistic-regression-article</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/ml-concepts-article</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/modulation-techniques</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/svm-article</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/topic/tree-based-methods-article</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
   <url>
     <loc>https://www.pratyaksha.in/article/attention-is-all-you-need</loc>
-    <lastmod>2026-08-31</lastmod>
+    <lastmod>2026-09-01</lastmod>
   </url>
 </urlset>
