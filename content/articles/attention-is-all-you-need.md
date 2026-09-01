@@ -12,7 +12,6 @@ tags:
   - transformers
   - attention
   - nlp
-heroImage: /images/transformer-hero.png
 ---
 
 ## Introduction
